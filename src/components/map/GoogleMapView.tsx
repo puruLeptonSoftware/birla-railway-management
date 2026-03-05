@@ -754,7 +754,7 @@ export function GoogleMapView() {
         isFilterPanelOpen={isFilterPanelOpen}
         onOpenFilters={() => setIsFilterPanelOpen((prev) => !prev)}
       />
-      <APIProvider apiKey={env.googleMapsApiKey} libraries={["places"]}>
+      <APIProvider apiKey={env.googleMapsApiKey} libraries={["places"]} region="IN">
         <DeckGL
           viewState={viewState}
           controller={true}
