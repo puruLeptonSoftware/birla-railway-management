@@ -49,84 +49,6 @@ const textStyle: CSSProperties = {
   letterSpacing: "0.01em",
 };
 
-const loadingIcon: ReactElement = (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 200 200"
-    width="20"
-    height="20"
-    style={{ flexShrink: 0, display: "block" }}
-  >
-    <radialGradient
-      id="toast-spinner-gradient"
-      cx=".66"
-      fx=".66"
-      cy=".3125"
-      fy=".3125"
-      gradientTransform="scale(1.5)"
-    >
-      <stop offset="0" stopColor="#1923FF" />
-      <stop offset=".3" stopColor="#1923FF" stopOpacity=".9" />
-      <stop offset=".6" stopColor="#1923FF" stopOpacity=".6" />
-      <stop offset=".8" stopColor="#1923FF" stopOpacity=".3" />
-      <stop offset="1" stopColor="#1923FF" stopOpacity="0" />
-    </radialGradient>
-    <circle
-      style={{ transformOrigin: "center" }}
-      fill="none"
-      stroke="url(#toast-spinner-gradient)"
-      strokeWidth="15"
-      strokeLinecap="round"
-      strokeDasharray="200 1000"
-      strokeDashoffset="0"
-      cx="100"
-      cy="100"
-      r="70"
-    >
-      <animateTransform
-        type="rotate"
-        attributeName="transform"
-        calcMode="spline"
-        dur="2"
-        values="360;0"
-        keyTimes="0;1"
-        keySplines="0 0 1 1"
-        repeatCount="indefinite"
-      />
-    </circle>
-    <circle
-      style={{ transformOrigin: "center" }}
-      fill="none"
-      opacity=".2"
-      stroke="#1923FF"
-      strokeWidth="15"
-      strokeLinecap="round"
-      cx="100"
-      cy="100"
-      r="70"
-    />
-  </svg>
-);
-const successIcon: ReactElement = (
-  <span
-    style={{
-      width: 18,
-      height: 18,
-      borderRadius: "9999px",
-      background: "#16a34a",
-      color: "#ffffff",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      fontSize: 12,
-      fontWeight: 700,
-      lineHeight: 1,
-    }}
-  >
-    ✓
-  </span>
-);
 const errorIcon: ReactElement = (
   <span
     style={{
@@ -368,6 +290,8 @@ export function GoogleMapView() {
   };
   const [mapLoaded, setMapLoaded] = useState(false);
   const [showFirstLoadPreloader, setShowFirstLoadPreloader] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [loaderMessage, setLoaderMessage] = useState("Loading railway map...");
   const [theme, setTheme] = useState<MapTheme>("LIGHT");
   const [viewState, setViewState] = useState<MapViewState>({
     longitude: defaultCenter.longitude,
@@ -381,8 +305,8 @@ export function GoogleMapView() {
     null,
   );
   const [pulsePhase, setPulsePhase] = useState(0);
-  const [isTrainPanelOpen, setIsTrainPanelOpen] = useState(false);
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [isTrainPanelOpen, setIsTrainPanelOpen] = useState(true);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
   const [filters, setFilters] = useState<TrainFilterState>({
     zones: [],
     statuses: [],
@@ -598,38 +522,27 @@ export function GoogleMapView() {
     }
 
     hasLoadedDataRef.current = true;
-    let tracksToastId: string | number | null = null;
-    let trainsToastId: string | number | null = null;
 
     const loadData = async () => {
+      let trainsLoadingToastId: string | number | null = null;
       try {
-        tracksToastId = toast.loading(
-          toastContent(loadingIcon, "Loading Railways routes."),
-          { icon: false, closeButton: false },
-        );
+        // Phase 1: Map + routes under global fullscreen loader.
+        setIsDataLoading(true);
+        setLoaderMessage("Loading Railways routes.");
         const trackResponse = await fetch("/Railway Track.json");
         if (!trackResponse.ok) {
           throw new Error(`Track load failed: HTTP ${trackResponse.status}`);
         }
         const trackJson = (await trackResponse.json()) as GeoJSON;
         setTracksGeoJson(trackJson);
-        if (tracksToastId !== null) {
-          toast.update(tracksToastId, {
-            render: toastContent(
-              successIcon,
-              "Railway routes loaded successfully.",
-            ),
-            type: "success",
-            isLoading: false,
-            autoClose: 3000,
-            icon: false,
-          });
-        }
 
-        trainsToastId = toast.loading(
-          toastContent(loadingIcon, "Loading train positions."),
-          { icon: false, closeButton: false },
-        );
+        // Routes are ready: hide global loader before train stream starts.
+        setIsDataLoading(false);
+
+        // Phase 2: Train layer via toast loading state only.
+        trainsLoadingToastId = toast.loading("Loading train positions.", {
+          closeButton: false,
+        });
         const timelineFrames = await fetchTrainTimeline();
         timelineFramesRef.current = timelineFrames;
         timelineFrameIndexRef.current = 0;
@@ -649,43 +562,21 @@ export function GoogleMapView() {
             setTrains(frames[timelineFrameIndexRef.current] ?? []);
           }, 1000);
         }
-        if (trainsToastId !== null) {
-          toast.update(trainsToastId, {
-            render: toastContent(
-              successIcon,
-              "Train positions loaded successfully.",
-            ),
-            type: "success",
-            isLoading: false,
-            autoClose: 3000,
-            icon: false,
-          });
+
+        if (trainsLoadingToastId !== null) {
+          toast.dismiss(trainsLoadingToastId);
         }
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unknown error";
-        if (tracksToastId !== null) {
-          toast.update(tracksToastId, {
-            render: toastContent(
-              errorIcon,
-              `Failed to load map data: ${message}`,
-            ),
-            type: "error",
-            isLoading: false,
-            autoClose: 5000,
-            icon: false,
-          });
-        } else {
-          toast.error(
-            toastContent(errorIcon, `Failed to load map data: ${message}`),
-            {
-              icon: false,
-            },
-          );
+        if (trainsLoadingToastId !== null) {
+          toast.dismiss(trainsLoadingToastId);
         }
-        if (trainsToastId !== null) {
-          toast.dismiss(trainsToastId);
-        }
+        toast.error(toastContent(errorIcon, `Failed to load map data: ${message}`), {
+          icon: false,
+        });
+      } finally {
+        setIsDataLoading(false);
       }
     };
 
@@ -942,8 +833,8 @@ export function GoogleMapView() {
         ))}
       </div>
 
-      {showFirstLoadPreloader && (
-        <ApplicationLoader theme={theme} message="Loading railway map..." />
+      {(showFirstLoadPreloader || isDataLoading) && (
+        <ApplicationLoader theme={theme} message={loaderMessage} />
       )}
     </div>
   );
