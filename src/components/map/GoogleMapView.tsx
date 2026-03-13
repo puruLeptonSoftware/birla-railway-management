@@ -239,6 +239,7 @@ export function GoogleMapView() {
   const [pulsePhase, setPulsePhase] = useState(0);
   const [filterByEmpty, setFilterByEmpty] = useState(true);
   const [filterByLoaded, setFilterByLoaded] = useState(true);
+  const [focusedFnr, setFocusedFnr] = useState<string | null>(null);
   const viewStateRef = useRef<MapViewState>(viewState);
   const flyAnimationFrameRef = useRef<number | null>(null);
 
@@ -256,8 +257,16 @@ export function GoogleMapView() {
   };
 
   const trainsForMap = useMemo(() => {
-    if (!filterByEmpty && !filterByLoaded) return [];
-    return inTransitTrains.filter((train) => {
+    const base =
+      focusedFnr != null
+        ? inTransitTrains.filter((train) => train.fnr === focusedFnr)
+        : inTransitTrains;
+
+    if (!filterByEmpty && !filterByLoaded) {
+      return focusedFnr != null ? base : [];
+    }
+
+    return base.filter((train) => {
       const stops = train.stops ?? [];
       if (stops.length === 0) return false;
       const idx = getLastReachedIndex(stops);
@@ -267,7 +276,64 @@ export function GoogleMapView() {
       const isLoaded = leFlag === "L" || !leFlag;
       return (filterByEmpty && isEmpty) || (filterByLoaded && isLoaded);
     });
-  }, [inTransitTrains, filterByEmpty, filterByLoaded]);
+  }, [inTransitTrains, filterByEmpty, filterByLoaded, focusedFnr]);
+
+  const focusTrainPath = (fnr: string) => {
+    const train = inTransitTrains.find((t) => t.fnr === fnr);
+    if (!train) return;
+    const stops = (train.stops ?? []).filter(
+      (s) => Number.isFinite(Number(s.LGTD)) && Number.isFinite(Number(s.LTTD)),
+    );
+    if (stops.length === 0) return;
+
+    const startStop = stops[0];
+    const endStop = stops[stops.length - 1];
+
+    const startLng = Number(startStop.LGTD);
+    const startLat = Number(startStop.LTTD);
+    const endLng = Number(endStop.LGTD);
+    const endLat = Number(endStop.LTTD);
+
+    if (
+      !Number.isFinite(startLng) ||
+      !Number.isFinite(startLat) ||
+      !Number.isFinite(endLng) ||
+      !Number.isFinite(endLat)
+    ) {
+      return;
+    }
+
+    let minLng = Math.min(startLng, endLng);
+    let maxLng = Math.max(startLng, endLng);
+    let minLat = Math.min(startLat, endLat);
+    let maxLat = Math.max(startLat, endLat);
+
+    // Add padding so both endpoints and the path are comfortably inside view.
+    const lngSpan = maxLng - minLng || 0.5;
+    const latSpan = maxLat - minLat || 0.5;
+    const paddingFactor = 0.25;
+    minLng -= lngSpan * paddingFactor;
+    maxLng += lngSpan * paddingFactor;
+    minLat -= latSpan * paddingFactor;
+    maxLat += latSpan * paddingFactor;
+
+    const centerLng = (minLng + maxLng) / 2;
+    const centerLat = (minLat + maxLat) / 2;
+
+    const spanDeg = Math.max(maxLat - minLat, maxLng - minLng) || 1;
+    const margin = 1.4;
+    const visibleSpan = spanDeg * margin;
+    let zoom = Math.log2(360 / visibleSpan);
+
+    // Clamp zoom so we don't over-zoom or under-zoom.
+    if (!Number.isFinite(zoom)) {
+      zoom = 6;
+    } else {
+      zoom = Math.max(4.2, Math.min(9, zoom));
+    }
+
+    smoothMoveTo(centerLng, centerLat, zoom, 1400);
+  };
 
   const statusCounts = useMemo(() => {
     const counts = {
@@ -1093,8 +1159,18 @@ export function GoogleMapView() {
         <InTransitTrainsPanel
           trains={inTransitTrains}
           selectedTrainFrn={selectedTrainFrn}
+          focusedFnr={focusedFnr}
           filterByEmpty={filterByEmpty}
           filterByLoaded={filterByLoaded}
+          onToggleFocus={(fnr) => {
+            setFocusedFnr((prev) => {
+              const next = prev === fnr ? null : fnr;
+              if (next) {
+                focusTrainPath(next);
+              }
+              return next;
+            });
+          }}
           onSelectTrain={(fnr) => {
             setSelectedTrainFrn(fnr);
             const train = inTransitTrains.find((t) => t.fnr === fnr);

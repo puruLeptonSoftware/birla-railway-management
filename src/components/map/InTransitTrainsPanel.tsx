@@ -8,6 +8,8 @@ type InTransitTrainsPanelProps = {
   trains: InTransitTrain[];
   selectedTrainFrn: string | null;
   onSelectTrain: (fnr: string) => void;
+  focusedFnr: string | null;
+  onToggleFocus: (fnr: string) => void;
   theme: MapTheme;
   fnrsWithNoRelease: Set<string>;
   filterByEmpty: boolean;
@@ -106,6 +108,8 @@ export function InTransitTrainsPanel({
   trains,
   selectedTrainFrn,
   onSelectTrain,
+  focusedFnr,
+  onToggleFocus,
   theme,
   fnrsWithNoRelease,
   filterByEmpty,
@@ -350,6 +354,7 @@ export function InTransitTrainsPanel({
         ) : (
           filtered.map((t) => {
             const isSelected = selectedTrainFrn === t.fnr;
+            const isFocused = focusedFnr === t.fnr;
             return (
               <button
                 key={t.fnr}
@@ -395,16 +400,69 @@ export function InTransitTrainsPanel({
                   </div>
                   <div
                     style={{
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      background: t.statusColor,
-                      color: "#ffffff",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      textTransform: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
                     }}
                   >
-                    {t.statusLabel}
+                    <div
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: t.statusColor,
+                        color: "#ffffff",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: "none",
+                      }}
+                    >
+                      {t.statusLabel}
+                    </div>
+                    <button
+                      tabIndex={-1}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleFocus(t.fnr);
+                      }}
+                      title={
+                        isFocused
+                          ? "Show all trains"
+                          : "Focus this train on map"
+                      }
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 999,
+                        border: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        background: "transparent",
+                        color: isFocused
+                          ? "#dc2626"
+                          : theme === "DARK"
+                            ? "#64748b"
+                            : "#94a3b8",
+                        padding: 0,
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                        strokeWidth="10"
+                      >
+                        <path
+                          fill="currentColor"
+                          strokeWidth="10"
+                          d="M3 9a1 1 0 0 0 1-1V5a1 1 0 0 1 1-1h3a1 1 0 0 0 0-2H5a3 3 0 0 0-3 3v3a1 1 0 0 0 1 1m5 11H5a1 1 0 0 1-1-1v-3a1 1 0 0 0-2 0v3a3 3 0 0 0 3 3h3a1 1 0 0 0 0-2m9-7a1 1 0 0 0 0-2h-1.14A4 4 0 0 0 13 8.14V7a1 1 0 0 0-2 0v1.14A4 4 0 0 0 8.14 11H7a1 1 0 0 0 0 2h1.14A4 4 0 0 0 11 15.86V17a1 1 0 0 0 2 0v-1.14A4 4 0 0 0 15.86 13Zm-5 1a2 2 0 1 1 2-2a2 2 0 0 1-2 2m9 1a1 1 0 0 0-1 1v3a1 1 0 0 1-1 1h-3a1 1 0 0 0 0 2h3a3 3 0 0 0 3-3v-3a1 1 0 0 0-1-1M19 2h-3a1 1 0 0 0 0 2h3a1 1 0 0 1 1 1v3a1 1 0 0 0 2 0V5a3 3 0 0 0-3-3"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <div
