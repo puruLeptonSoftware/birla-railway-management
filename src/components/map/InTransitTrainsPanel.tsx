@@ -222,7 +222,7 @@ export function InTransitTrainsPanel({
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: theme === "DARK" ? "#cbd5e1" : "#334155",
+                color: theme === "DARK" ? "#38bdf8" : "#2563eb",
               }}
             >
               {filtered.length}/{summaries.length}

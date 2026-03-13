@@ -157,7 +157,7 @@ function MapOverlayControls({
           gap: 6,
           zIndex: 1900,
           pointerEvents: "auto",
-          maxWidth: 260,
+          minWidth: 210,
           zoom: 0.9,
         }}
       >
@@ -174,7 +174,7 @@ function MapOverlayControls({
             style={{ width: 52, height: 24 }}
           />
           <span style={{ fontSize: 11, color: "#334155" }}>
-            <strong>Indian Railway track</strong>
+            <strong>IR Rake</strong>
           </span>
         </div>
         <div
@@ -190,7 +190,7 @@ function MapOverlayControls({
             style={{ width: 52, height: 24 }}
           />
           <span style={{ fontSize: 11, color: "#334155" }}>
-            <strong>Ultratrack Railway track</strong>
+            <strong>UTCL Rake</strong>
           </span>
         </div>
         <div
@@ -206,7 +206,7 @@ function MapOverlayControls({
             style={{ width: 52, height: 24 }}
           />
           <span style={{ fontSize: 11, color: "#334155" }}>
-            <strong>Third Party Railway track</strong>
+            <strong>Third Party Rake</strong>
           </span>
         </div>
       </div>
@@ -269,6 +269,42 @@ export function GoogleMapView() {
       return (filterByEmpty && isEmpty) || (filterByLoaded && isLoaded);
     });
   }, [inTransitTrains, filterByEmpty, filterByLoaded]);
+
+  const statusCounts = useMemo(() => {
+    const counts = {
+      arrived: 0,
+      stabled: 0,
+      enRoute: 0,
+      awaiting: 0,
+    };
+
+    for (const train of inTransitTrains) {
+      const stops = train.stops ?? [];
+      if (stops.length === 0) continue;
+
+      const lastReached = getLastReachedIndex(stops);
+      const currentIndex = lastReached >= 0 ? lastReached : 0;
+      const current = stops[currentIndex];
+
+      const hasNext = currentIndex < stops.length - 1;
+      const hasPrev = currentIndex > 0;
+      const isNoRelease = fnrsWithNoRelease.has(train.fnr);
+      const loadStts = current.loadStts;
+
+      if (isNoRelease) {
+        counts.awaiting += 1;
+      } else if (!hasNext) {
+        counts.arrived += 1;
+      } else if (loadStts === "ST") {
+        counts.stabled += 1;
+      } else {
+        // Departing + in-flight are both treated as "En route"
+        counts.enRoute += 1;
+      }
+    }
+
+    return counts;
+  }, [inTransitTrains, fnrsWithNoRelease]);
 
   const smoothMoveTo = (
     longitude: number,
@@ -613,18 +649,33 @@ export function GoogleMapView() {
               const eta = formatDateTime(stop.ETA);
               const hasNextStation = stop.nextSttnName || stop.nextSttn;
               const nextStation = hasNextStation
-                ? `${stop.nextSttnName ?? "-"} (${stop.nextSttn ?? "-"})`
+                ? `${stop.nextSttn ?? "-"}`
                 : "";
               const hasPrevStation = stop.prevSttnName || stop.prevSttn;
               const prevStation = hasPrevStation
-                ? `${stop.prevSttnName ?? "-"} (${stop.prevSttn ?? "-"})`
+                ? `${stop.prevSttn ?? "-"}`
                 : "-";
               const prevStationLabel = hasPrevStation
                 ? prevStation
                 : "Starting journey";
-              const prevLatLngLabel = hasPrevStation
-                ? `${stop.prevLTTD !== undefined ? `${Number(stop.prevLTTD).toFixed(4)}°` : "-"}, ${stop.prevLGTD !== undefined ? `${Number(stop.prevLGTD).toFixed(4)}°` : "-"}`
-                : "Starting journey";
+              const journeyStart = (() => {
+                const train = inTransitTrains.find(
+                  (t) => t.fnr === String(stop.fnr),
+                );
+                const stops = train?.stops ?? [];
+                if (stops.length === 0) return "-";
+                const first = stops[0];
+                return `${first.sttn ?? "-"}`;
+              })();
+              const journeyEnd = (() => {
+                const train = inTransitTrains.find(
+                  (t) => t.fnr === String(stop.fnr),
+                );
+                const stops = train?.stops ?? [];
+                if (stops.length === 0) return "-";
+                const last = stops[stops.length - 1];
+                return `${last.sttn ?? "-"}`;
+              })();
 
               // Status badge: Arrived (green), Stabled (red), Departing (pink), En route (pink)
               const status = !hasNextStation
@@ -634,33 +685,23 @@ export function GoogleMapView() {
                   : !hasPrevStation
                     ? { label: "Departing", bg: "#f49cbb" }
                     : { label: "En route", bg: "#f49cbb" };
-              const statusBadge = `<span style="padding:2px 8px;border-radius:999px;background:${status.bg};color:#ffffff;font-size:11px;font-weight:600;">${status.label}</span>`;
-              const currentLat =
-                stop.LTTD !== undefined
-                  ? `${Number(stop.LTTD).toFixed(4)}°`
-                  : "-";
-              const currentLng =
-                stop.LGTD !== undefined
-                  ? `${Number(stop.LGTD).toFixed(4)}°`
-                  : "-";
-              const nextLat =
-                stop.nextLTTD !== undefined
-                  ? `${Number(stop.nextLTTD).toFixed(4)}°`
-                  : "-";
-              const nextLng =
-                stop.nextLGTD !== undefined
-                  ? `${Number(stop.nextLGTD).toFixed(4)}°`
-                  : "-";
+              const statusBadge = `<span style="padding:4px 8px;border-radius:12px;background:${status.bg};color:#ffffff;font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;min-width:0px;text-align:center;">${status.label}</span>`;
 
               return {
                 html: `
-                  <div style="background:#ffffff;padding:10px 12px;border-radius:12px;min-width:270px;max-width:340px;border:1px solid #e5e7eb;box-shadow:0 12px 28px rgba(15,23,42,0.35);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                      <div style="font-size:13px;font-weight:700;color:#0f172a;">
-                        ${headerLabel}
+                  <div style="background:#ffffff;padding:0;border-radius:12px;min-width:270px;max-width:340px;border:1px solid #e5e7eb;box-shadow:0 12px 28px rgba(15,23,42,0.35);overflow:hidden;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#f1f5f9;border-bottom:1px solid #e5e7eb;">
+                      <div style="display:flex;flex-direction:column;gap:2px;">
+                        <div style="font-size:13px;font-weight:700;color:#0f172a;">
+                          ${headerLabel}
+                        </div>
+                        <div style="font-size:11px;font-weight:600;color:#4b5563;white-space:normal;word-wrap:break-word;">
+                          ${journeyStart} &rarr; ${journeyEnd}
+                        </div>
                       </div>
                       ${statusBadge}
                     </div>
+                    <div style="padding:8px 10px 10px 10px;">
                     <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">
                       Station
                     </div>
@@ -677,28 +718,20 @@ export function GoogleMapView() {
                         <div style="font-weight:600;color:#111827;">${departure}</div>
                       </div>
                       <div>
-                        <div style="color:#9ca3af;margin-bottom:1px;">ETA</div>
-                        <div style="font-weight:600;color:#111827;">${eta}</div>
-                      </div>
-                      <div>
-                        <div style="color:#9ca3af;margin-bottom:1px;">Current lat / long</div>
-                        <div style="font-weight:600;color:#111827;">${currentLat}, ${currentLng}</div>
-                      </div>
-                      <div>
                         <div style="color:#9ca3af;margin-bottom:1px;">Prev station</div>
                         <div style="font-weight:600;color:#111827;">${prevStationLabel}</div>
                       </div>
                       <div>
-                        <div style="color:#9ca3af;margin-bottom:1px;">Prev lat / long</div>
-                        <div style="font-weight:600;color:#111827;">${prevLatLngLabel}</div>
-                      </div>
-                      <div>
                         <div style="color:#9ca3af;margin-bottom:1px;">Next station</div>
-                        <div style="font-weight:600;color:#111827;">${hasNextStation ? nextStation : "Arrived at destination"}</div>
+                        <div style="font-weight:600;color:#111827;">${
+                          hasNextStation
+                            ? nextStation
+                            : "Arrived at destination"
+                        }</div>
                       </div>
-                      <div>
-                        <div style="color:#9ca3af;margin-bottom:1px;">Next lat / long</div>
-                        <div style="font-weight:600;color:#111827;">${hasNextStation ? `${nextLat}, ${nextLng}` : "Arrived at destination"}</div>
+                      <div style="grid-column:1 / span 2;">
+                        <div style="color:#9ca3af;margin-bottom:1px;">ETA</div>
+                        <div style="font-weight:600;color:#111827;">${eta}</div>
                       </div>
                     </div>
                   </div>
@@ -744,226 +777,353 @@ export function GoogleMapView() {
           onZoomOut={zoomOut}
         />
 
-        {/* Train legend: bottom right – empty vs loaded, then color coding */}
+        {/* Train legend: bottom right – rake type, status and path meaning */}
         <div
           style={{
             position: "absolute",
             bottom: 108,
             right: 12,
-            padding: "8px 12px",
+            padding: "6px 10px",
             borderRadius: 10,
             background: "rgba(255,255,255,0.96)",
-            // boxShadow: "0 10px 24px rgba(15,23,42,0.3)",
             border: "1px solid #e5e7eb",
             display: "flex",
-            flexDirection: "row",
-            gap: 16,
+            flexDirection: "column",
+            gap: 6,
             zIndex: 1900,
             pointerEvents: "auto",
-            maxWidth: 360,
+            maxWidth: 280,
           }}
         >
-          {/* Left: train type – checkboxes for Empty / Loaded */}
           <div
             style={{
               display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              minWidth: 90,
+              flexDirection: "row",
+              gap: 14,
             }}
           >
+            {/* Left: train type – checkboxes for Empty / Loaded */}
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#0f172a",
-                marginBottom: 2,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                minWidth: 90,
               }}
             >
-              Train type
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginBottom: 2,
+                }}
+              >
+                Rake L/E
+              </div>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  padding: "2px 0",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={filterByEmpty}
+                  onChange={(e) => setFilterByEmpty(e.target.checked)}
+                  style={{ width: 14, height: 14, accentColor: "#2563eb" }}
+                />
+                <img
+                  src="/icon-atlas/legend-train-empty.svg"
+                  alt=""
+                  style={{ width: 24, height: 24 }}
+                />
+                <span style={{ fontSize: 11, color: "#334155" }}>Empty</span>
+              </label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  padding: "2px 0",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={filterByLoaded}
+                  onChange={(e) => setFilterByLoaded(e.target.checked)}
+                  style={{ width: 14, height: 14, accentColor: "#2563eb" }}
+                />
+                <img
+                  src="/icon-atlas/legend-train-loaded.svg"
+                  alt=""
+                  style={{ width: 24, height: 24 }}
+                />
+                <span style={{ fontSize: 11, color: "#334155" }}>Loaded</span>
+              </label>
             </div>
-            <label
+
+            {/* Right: status / load (single column) */}
+            <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-                padding: "2px 0",
+                flexDirection: "column",
+                minWidth: 120,
+                paddingLeft: 8,
+                borderLeft: "1px solid #e5e7eb",
               }}
             >
-              <input
-                type="checkbox"
-                checked={filterByEmpty}
-                onChange={(e) => setFilterByEmpty(e.target.checked)}
-                style={{ width: 14, height: 14, accentColor: "#2563eb" }}
-              />
-              <img
-                src="/icon-atlas/legend-train-empty.svg"
-                alt=""
-                style={{ width: 28, height: 28 }}
-              />
-              <span style={{ fontSize: 11, color: "#334155" }}>Empty</span>
-            </label>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-                padding: "2px 0",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={filterByLoaded}
-                onChange={(e) => setFilterByLoaded(e.target.checked)}
-                style={{ width: 14, height: 14, accentColor: "#2563eb" }}
-              />
-              <img
-                src="/icon-atlas/legend-train-loaded.svg"
-                alt=""
-                style={{ width: 28, height: 28 }}
-              />
-              <span style={{ fontSize: 11, color: "#334155" }}>Loaded</span>
-            </label>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  marginBottom: 4,
+                }}
+              >
+                Status / load
+              </div>
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#80b918",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "#334155",
+                      flexGrow: 1,
+                    }}
+                  >
+                    Arrived
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {statusCounts.arrived}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#a4133c",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "#334155",
+                      flexGrow: 1,
+                    }}
+                  >
+                    Stabled
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {statusCounts.stabled}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#f49cbb",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "#334155",
+                      flexGrow: 1,
+                    }}
+                  >
+                    En route
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {statusCounts.enRoute}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "#c9a227",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "#334155",
+                      flexGrow: 1,
+                    }}
+                  >
+                    Awaiting departure
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {statusCounts.awaiting}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right: status / load (single column, with separator) */}
+          {/* Bottom row: path explanation uses full width */}
           <div
             style={{
+              marginTop: 4,
+              paddingTop: 4,
+              borderTop: "1px dashed #e5e7eb",
               display: "flex",
-              flexDirection: "column",
-              minWidth: 142,
-              paddingLeft: 12,
-              borderLeft: "1px solid #e5e7eb",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 10,
+              color: "#475569",
+              flexWrap: "wrap",
             }}
           >
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#0f172a",
-                marginBottom: 4,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                minWidth: 0,
               }}
             >
-              Status / load
+              <span
+                style={{
+                  flexShrink: 0,
+                  width: 32,
+                  height: 0,
+                  borderTop: "3px solid #64748b",
+                  borderRadius: 999,
+                }}
+              />
+              <span>Solid path = completed journey</span>
             </div>
-            <div>
-              <div
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                minWidth: 0,
+              }}
+            >
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 4,
+                  flexShrink: 0,
+                  width: 32,
+                  height: 0,
+                  borderTop: "3px dashed #94a3b8",
+                  borderRadius: 999,
                 }}
-              >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#80b918",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 11, color: "#334155" }}>Arrived</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 4,
-                }}
-              >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#a4133c",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 11, color: "#334155" }}>Stabled</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 4,
-                }}
-              >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#f49cbb",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 11, color: "#334155" }}>En route</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#c9a227",
-                    flexShrink: 0,
-                  }}
-                />
-                <span style={{ fontSize: 11, color: "#334155" }}>
-                  Awaiting departure
-                </span>
-              </div>
+              />
+              <span>Dotted path = remaining journey</span>
             </div>
           </div>
         </div>
 
         {/* Left-side in-transit trains list */}
         <InTransitTrainsPanel
-            trains={inTransitTrains}
-            selectedTrainFrn={selectedTrainFrn}
-            filterByEmpty={filterByEmpty}
-            filterByLoaded={filterByLoaded}
-            onSelectTrain={(fnr) => {
-              setSelectedTrainFrn(fnr);
-              const train = inTransitTrains.find((t) => t.fnr === fnr);
-              if (!train) return;
-              const stops = train.stops ?? [];
-              if (stops.length === 0) return;
-              const lastReachedIndex = (() => {
-                let last = -1;
-                for (let i = 0; i < stops.length; i++) {
-                  const a = stops[i].arvlTime;
-                  if (a && a !== "-") {
-                    last = i;
-                  }
+          trains={inTransitTrains}
+          selectedTrainFrn={selectedTrainFrn}
+          filterByEmpty={filterByEmpty}
+          filterByLoaded={filterByLoaded}
+          onSelectTrain={(fnr) => {
+            setSelectedTrainFrn(fnr);
+            const train = inTransitTrains.find((t) => t.fnr === fnr);
+            if (!train) return;
+            const stops = train.stops ?? [];
+            if (stops.length === 0) return;
+            const lastReachedIndex = (() => {
+              let last = -1;
+              for (let i = 0; i < stops.length; i++) {
+                const a = stops[i].arvlTime;
+                if (a && a !== "-") {
+                  last = i;
                 }
-                return last;
-              })();
-              const currentIndex =
-                lastReachedIndex >= 0 ? lastReachedIndex : 0;
-              const current = stops[currentIndex];
-              const lng = Number(current.LGTD);
-              const lat = Number(current.LTTD);
-              if (Number.isFinite(lng) && Number.isFinite(lat)) {
-                smoothMoveTo(lng, lat, trainFocusZoom, 1400);
               }
-            }}
-            theme={theme}
-            fnrsWithNoRelease={fnrsWithNoRelease}
-          />
+              return last;
+            })();
+            const currentIndex = lastReachedIndex >= 0 ? lastReachedIndex : 0;
+            const current = stops[currentIndex];
+            const lng = Number(current.LGTD);
+            const lat = Number(current.LTTD);
+            if (Number.isFinite(lng) && Number.isFinite(lat)) {
+              smoothMoveTo(lng, lat, trainFocusZoom, 1400);
+            }
+          }}
+          theme={theme}
+          fnrsWithNoRelease={fnrsWithNoRelease}
+        />
       </APIProvider>
 
       {(showFirstLoadPreloader || isDataLoading) && (
