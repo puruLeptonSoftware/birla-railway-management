@@ -157,7 +157,7 @@ function MapOverlayControls({
           gap: 6,
           zIndex: 1900,
           pointerEvents: "auto",
-          minWidth: 210,
+          minWidth: 190,
           zoom: 0.9,
         }}
       >
@@ -287,7 +287,6 @@ export function GoogleMapView() {
       const current = stops[currentIndex];
 
       const hasNext = currentIndex < stops.length - 1;
-      const hasPrev = currentIndex > 0;
       const isNoRelease = fnrsWithNoRelease.has(train.fnr);
       const loadStts = current.loadStts;
 
@@ -792,7 +791,7 @@ export function GoogleMapView() {
             gap: 6,
             zIndex: 1900,
             pointerEvents: "auto",
-            maxWidth: 280,
+            maxWidth: 260,
           }}
         >
           <div
