@@ -1,4 +1,7 @@
 import mockData from "../mock-data/mock-data";
+import intransitData from "../mock-data/intransit";
+import metaData from "../mock-data/meta-data";
+import loadingData from "../mock-data/loading-data";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -89,4 +92,128 @@ export const fetchTrains = async (
     console.error("Error fetching train data:", error);
     throw error;
   }
+};
+
+// --- In-transit mock API (fnr -> station timeline) ---
+
+export type InTransitStop = {
+  tranSqnc: number | null;
+  sttnSqnc: number | null;
+  loadId: string;
+  sttn: string;
+  arvlTime: string;
+  dprtTime: string;
+  sttnName: string;
+  dvsnCode: string;
+  zone: string;
+  rptdNrptd: string;
+  crntFlag: string;
+  nodeFlag: string;
+  trvdKMS: number | string;
+  r_KMS: number | string;
+  ETA: string;
+  LTTD: number;
+  LGTD: number;
+  rakeId: string;
+  loadName: string;
+  locoName: string;
+  exArvlTime: string;
+  sqnc: number;
+  CREATION_DATE: string;
+  fnr: string;
+  FNRDate: string;
+  metWithDate: string;
+  // Optional metadata, enriched from meta-data.ts
+  leFlag?: string;
+  rakeOwner?: string;
+  loadStts?: string;
+};
+
+export type InTransitTrain = {
+  fnr: string;
+  stops: InTransitStop[];
+};
+
+// --- Meta-data mock API (fnr -> leFlag / rakeOwner) ---
+
+export type TrainMeta = {
+  fnr: string;
+  leFlag: string;
+  rakeOwner: string;
+  loadStts: string;
+};
+
+type MetaMap = Record<
+  string,
+  {
+    leFlag: string;
+    rakeOwner: string;
+    loadStts: string;
+  }
+>;
+
+const rawMetaMap = metaData as MetaMap;
+
+export const fetchTrainMeta = async (): Promise<MetaMap> => {
+  // Mimic API latency
+  await new Promise((resolve) => window.setTimeout(resolve, 200));
+  return rawMetaMap;
+};
+
+// --- Loading data mock API (fnr -> placementTime / arrivalTime / releaseTime) ---
+
+export type LoadingEntry = {
+  placementTime: string;
+  arrivalTime: string;
+  releaseTime: string | null;
+};
+
+type LoadingDataMap = Record<string, LoadingEntry>;
+
+const rawLoadingData = loadingData as LoadingDataMap;
+
+/** Fetches loading data (mock). Returns map of fnr -> loading entry. */
+export const fetchLoadingData = async (): Promise<LoadingDataMap> => {
+  await new Promise((resolve) => window.setTimeout(resolve, 250));
+  return rawLoadingData;
+};
+
+/** Returns set of fnr that have no releaseTime (null or undefined). */
+export const getFnrWithNoReleaseTime = (
+  data: LoadingDataMap,
+): Set<string> => {
+  const set = new Set<string>();
+  for (const [fnr, entry] of Object.entries(data)) {
+    if (entry?.releaseTime == null || entry?.releaseTime === "") {
+      set.add(fnr);
+    }
+  }
+  return set;
+};
+
+const sortStopsBySqnc = (stops: InTransitStop[]): InTransitStop[] =>
+  stops.slice().sort((a, b) => a.sqnc - b.sqnc);
+
+export const fetchInTransitTrains = async (): Promise<InTransitTrain[]> => {
+  // Mimic API latency for a smoother UX
+  await new Promise((resolve) => window.setTimeout(resolve, 300));
+
+  const meta = await fetchTrainMeta();
+
+  return Object.entries(intransitData).map(([fnr, rawStops]) => {
+    const stops = sortStopsBySqnc(rawStops as InTransitStop[]);
+    const metaForFnr = meta[fnr];
+
+    const enrichedStops =
+      metaForFnr != null
+        ? stops.map((s) => ({
+            ...s,
+            leFlag: metaForFnr.leFlag,
+            rakeOwner: metaForFnr.rakeOwner,
+            loadStts: metaForFnr.loadStts,
+          }))
+        : stops;
+
+    return { fnr, stops: enrichedStops };
+  });
 };

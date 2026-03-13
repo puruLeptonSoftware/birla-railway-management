@@ -58,6 +58,16 @@ body,
   background: #f1f5f9;
   color: #334155;
 }
+div.gmnoprint > div[draggable="false"] {
+  top: 1000px;
+}
+div.gmnoprint {
+  bottom: -200px;
+}
+a[title] {
+  bottom: -200px;
+  position: absolute;
+}
 
 .map-placeholder h2 {
   margin: 0;
@@ -89,35 +99,52 @@ body,
 
 .train-panel-scrollbar {
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
   scrollbar-color: #94a3b8 transparent;
 }
 
 .train-panel-scrollbar::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .train-panel-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+  border-radius: 4px;
+  margin: 4px 0;
 }
 
 .train-panel-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #94a3b8;
+  border-radius: 4px;
+  min-height: 40px;
 }
 
 .train-panel-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  background: #64748b;
+}
+
+.train-panel-scrollbar::-webkit-scrollbar-thumb:active {
+  background: #475569;
 }
 
 .train-panel-scrollbar-dark {
   scrollbar-color: #64748b transparent;
 }
 
+.train-panel-scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .train-panel-scrollbar-dark::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  background: #475569;
+  border-radius: 4px;
+  min-height: 40px;
+}
+
+.train-panel-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.train-panel-scrollbar-dark::-webkit-scrollbar-thumb:active {
+  background: #94a3b8;
 }

@@ -1,0 +1,33 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 320 140"
+  width="320"
+  height="140"
+>
+  <!-- Left solid arm: travelled segment color (UTCL) -->
+  <line
+    x1="160"
+    y1="40"
+    x2="20"
+    y2="120"
+    stroke="#f15bb5"
+    stroke-width="22"
+    stroke-linecap="round"
+  />
+
+  <!-- Right dashed arm: future segment color (UTCL) -->
+  <line
+    x1="160"
+    y1="40"
+    x2="310"
+    y2="120"
+    stroke="#9d4edd"
+    stroke-width="22"
+    stroke-linecap="round"
+    stroke-dasharray="40 30"
+  />
+
+  <!-- Center node: station point color -->
+  <circle cx="160" cy="40" r="20" fill="#00b4d8" />
+</svg>
+

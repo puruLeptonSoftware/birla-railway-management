@@ -1,0 +1,28 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 24 24"
+  width="24"
+  height="24"
+>
+  <!-- Proper curved cement/sand load (unchanged) -->
+  <path
+    d="M1 8
+       C3 4.5, 7 2.5, 12 2.5
+       C17 2.5, 21 4.5, 23 8
+       Z"
+    fill="#9ca3af"
+  />
+
+  <!-- Body of the coach: AR status frame color #80b918 -->
+  <rect x="1" y="8" width="22" height="8" fill="#80b918" />
+
+  <!-- Inner white strips (windows) -->
+  <rect x="5" y="10" width="3" height="4" fill="#ffffff" />
+  <rect x="10.5" y="10" width="3" height="4" fill="#ffffff" />
+  <rect x="16" y="10" width="3" height="4" fill="#ffffff" />
+
+  <!-- Wheels: same AR frame color -->
+  <circle cx="6" cy="16" r="2" fill="#80b918" />
+  <circle cx="18" cy="16" r="2" fill="#80b918" />
+</svg>
+
