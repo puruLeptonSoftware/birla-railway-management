@@ -1,12 +1,12 @@
 const metaData = {
   "26013100016": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26013100353": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26013104748": {
@@ -41,7 +41,7 @@ const metaData = {
   },
   "26020100254": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020100412": {
@@ -76,22 +76,22 @@ const metaData = {
   },
   "26020111472": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020112569": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020115557": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020200059": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020200323": {
@@ -191,7 +191,7 @@ const metaData = {
   },
   "26020501994": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020521873": {
@@ -211,7 +211,7 @@ const metaData = {
   },
   "26020815417": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020821542": {
@@ -221,7 +221,7 @@ const metaData = {
   },
   "26020822073": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020822365": {
@@ -231,7 +231,7 @@ const metaData = {
   },
   "26020901723": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020906056": {
@@ -251,12 +251,12 @@ const metaData = {
   },
   "26020912604": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020913782": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26020925325": {
@@ -281,7 +281,7 @@ const metaData = {
   },
   "26020929321": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021300587": {
@@ -291,7 +291,7 @@ const metaData = {
   },
   "26021306891": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021309348": {
@@ -301,7 +301,7 @@ const metaData = {
   },
   "26021315057": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021326947": {
@@ -321,7 +321,7 @@ const metaData = {
   },
   "26021329485": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021400966": {
@@ -336,7 +336,7 @@ const metaData = {
   },
   "26021401196": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021402168": {
@@ -351,7 +351,7 @@ const metaData = {
   },
   "26021406021": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26021407455": {
@@ -376,12 +376,12 @@ const metaData = {
   },
   "26021804782": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "DP",
   },
   "26021808089": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "ST",
   },
   "26021816264": {
@@ -426,7 +426,7 @@ const metaData = {
   },
   "26021900703": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "DP",
   },
   "26021902181": {
@@ -446,7 +446,7 @@ const metaData = {
   },
   "26021903791": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "DP",
   },
   "26021904806": {
@@ -466,7 +466,7 @@ const metaData = {
   },
   "26021915583": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "DP",
   },
   "26022420000": {
@@ -476,7 +476,7 @@ const metaData = {
   },
   "26022420037": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26022420046": {
@@ -486,7 +486,7 @@ const metaData = {
   },
   "26022420204": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26022420213": {
@@ -526,17 +526,17 @@ const metaData = {
   },
   "26022428011": {
     leFlag: "E",
-    rakeOwner: "2",
+    rakeOwner: "IR",
     loadStts: "AR",
   },
   "26022429214": {
     leFlag: "E",
-    rakeOwner: "IR",
+    rakeOwner: "CCR",
     loadStts: "AR",
   },
   "26022429278": {
     leFlag: "L",
-    rakeOwner: "2",
+    rakeOwner: "CCR",
     loadStts: "AR",
   },
 };

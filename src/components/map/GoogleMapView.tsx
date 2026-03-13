@@ -43,12 +43,24 @@ function MapOverlayControls({
   onHomeView,
   onZoomIn,
   onZoomOut,
+  filterIrRake,
+  filterUtclRake,
+  filterCcrRake,
+  setFilterIrRake,
+  setFilterUtclRake,
+  setFilterCcrRake,
 }: {
   theme: MapTheme;
   setTheme: (theme: MapTheme) => void;
   onHomeView: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  filterIrRake: boolean;
+  filterUtclRake: boolean;
+  filterCcrRake: boolean;
+  setFilterIrRake: (value: boolean) => void;
+  setFilterUtclRake: (value: boolean) => void;
+  setFilterCcrRake: (value: boolean) => void;
 }) {
   return (
     <>
@@ -159,7 +171,7 @@ function MapOverlayControls({
           minWidth: 190,
           zoom: 0.9,
         }}
-      >
+        >
         <div
           style={{
             display: "flex",
@@ -172,9 +184,15 @@ function MapOverlayControls({
             alt="Indian Railways track"
             style={{ width: 52, height: 24 }}
           />
-          <span style={{ fontSize: 11, color: "#334155" }}>
+          <span style={{ fontSize: 11, color: "#334155", flexGrow: 1 }}>
             <strong>IR Rake</strong>
           </span>
+          <input
+            type="checkbox"
+            checked={filterIrRake}
+            onChange={(e) => setFilterIrRake(e.target.checked)}
+            style={{ width: 14, height: 14, accentColor: "#2563eb" }}
+          />
         </div>
         <div
           style={{
@@ -188,9 +206,15 @@ function MapOverlayControls({
             alt="Ultratrack railway track"
             style={{ width: 52, height: 24 }}
           />
-          <span style={{ fontSize: 11, color: "#334155" }}>
+          <span style={{ fontSize: 11, color: "#334155", flexGrow: 1 }}>
             <strong>UTCL Rake</strong>
           </span>
+          <input
+            type="checkbox"
+            checked={filterUtclRake}
+            onChange={(e) => setFilterUtclRake(e.target.checked)}
+            style={{ width: 14, height: 14, accentColor: "#2563eb" }}
+          />
         </div>
         <div
           style={{
@@ -204,9 +228,15 @@ function MapOverlayControls({
             alt="Third party railway track"
             style={{ width: 52, height: 24 }}
           />
-          <span style={{ fontSize: 11, color: "#334155" }}>
+          <span style={{ fontSize: 11, color: "#334155", flexGrow: 1 }}>
             <strong>Third Party Rake</strong>
           </span>
+          <input
+            type="checkbox"
+            checked={filterCcrRake}
+            onChange={(e) => setFilterCcrRake(e.target.checked)}
+            style={{ width: 14, height: 14, accentColor: "#2563eb" }}
+          />
         </div>
       </div>
     </>
@@ -239,6 +269,9 @@ export function GoogleMapView() {
   const [pulsePhase, setPulsePhase] = useState(0);
   const [filterByEmpty, setFilterByEmpty] = useState(true);
   const [filterByLoaded, setFilterByLoaded] = useState(true);
+  const [filterIrRake, setFilterIrRake] = useState(true);
+  const [filterUtclRake, setFilterUtclRake] = useState(true);
+  const [filterCcrRake, setFilterCcrRake] = useState(true);
   const [focusedFnr, setFocusedFnr] = useState<string | null>(null);
   const viewStateRef = useRef<MapViewState>(viewState);
   const flyAnimationFrameRef = useRef<number | null>(null);
@@ -262,11 +295,22 @@ export function GoogleMapView() {
         ? inTransitTrains.filter((train) => train.fnr === focusedFnr)
         : inTransitTrains;
 
+    const rakeFiltered = base.filter((train) => {
+      const stops = train.stops ?? [];
+      if (stops.length === 0) return false;
+      const owner = stops[0]?.rakeOwner;
+      if (owner === "IR") return filterIrRake;
+      if (owner === "UTCL") return filterUtclRake;
+      if (owner === "CCR") return filterCcrRake;
+      // Unknown owners are always shown
+      return true;
+    });
+
     if (!filterByEmpty && !filterByLoaded) {
-      return focusedFnr != null ? base : [];
+      return focusedFnr != null ? rakeFiltered : [];
     }
 
-    return base.filter((train) => {
+    return rakeFiltered.filter((train) => {
       const stops = train.stops ?? [];
       if (stops.length === 0) return false;
       const idx = getLastReachedIndex(stops);
@@ -276,7 +320,15 @@ export function GoogleMapView() {
       const isLoaded = leFlag === "L" || !leFlag;
       return (filterByEmpty && isEmpty) || (filterByLoaded && isLoaded);
     });
-  }, [inTransitTrains, filterByEmpty, filterByLoaded, focusedFnr]);
+  }, [
+    inTransitTrains,
+    filterByEmpty,
+    filterByLoaded,
+    focusedFnr,
+    filterIrRake,
+    filterUtclRake,
+    filterCcrRake,
+  ]);
 
   const focusTrainPath = (fnr: string) => {
     const train = inTransitTrains.find((t) => t.fnr === fnr);
@@ -839,6 +891,12 @@ export function GoogleMapView() {
           onHomeView={setHomeView}
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
+          filterIrRake={filterIrRake}
+          filterUtclRake={filterUtclRake}
+          filterCcrRake={filterCcrRake}
+          setFilterIrRake={setFilterIrRake}
+          setFilterUtclRake={setFilterUtclRake}
+          setFilterCcrRake={setFilterCcrRake}
         />
 
         {/* Train legend: bottom right – rake type, status and path meaning */}
@@ -1145,9 +1203,10 @@ export function GoogleMapView() {
                 style={{
                   flexShrink: 0,
                   width: 32,
-                  height: 0,
-                  borderTop: "3px dashed #94a3b8",
+                  height: 3,
                   borderRadius: 999,
+                  backgroundImage:
+                    "repeating-linear-gradient(to right, #94a3b8 0, #94a3b8 6px, transparent 6px, transparent 11px)",
                 }}
               />
               <span>Dotted path = remaining journey</span>
@@ -1162,6 +1221,9 @@ export function GoogleMapView() {
           focusedFnr={focusedFnr}
           filterByEmpty={filterByEmpty}
           filterByLoaded={filterByLoaded}
+          filterIrRake={filterIrRake}
+          filterUtclRake={filterUtclRake}
+          filterCcrRake={filterCcrRake}
           onToggleFocus={(fnr) => {
             setFocusedFnr((prev) => {
               const next = prev === fnr ? null : fnr;

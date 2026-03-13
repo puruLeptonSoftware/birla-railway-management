@@ -14,6 +14,9 @@ type InTransitTrainsPanelProps = {
   fnrsWithNoRelease: Set<string>;
   filterByEmpty: boolean;
   filterByLoaded: boolean;
+  filterIrRake: boolean;
+  filterUtclRake: boolean;
+  filterCcrRake: boolean;
 };
 
 const getLastReachedIndex = (stops: InTransitStop[]): number => {
@@ -48,6 +51,7 @@ type TrainSummary = {
   statusLabel: string;
   statusColor: string;
   leFlag: "E" | "L";
+  rakeOwner?: string;
 };
 
 const buildSummary = (
@@ -91,6 +95,7 @@ const buildSummary = (
   const toCode = last.sttn ?? "-";
   const currentCode = current.sttn ?? "-";
   const leFlag = current.leFlag === "E" ? "E" : "L";
+  const rakeOwner = first.rakeOwner;
 
   return {
     fnr: train.fnr,
@@ -101,6 +106,7 @@ const buildSummary = (
     statusLabel,
     statusColor,
     leFlag,
+    rakeOwner,
   };
 };
 
@@ -114,6 +120,9 @@ export function InTransitTrainsPanel({
   fnrsWithNoRelease,
   filterByEmpty,
   filterByLoaded,
+  filterIrRake,
+  filterUtclRake,
+  filterCcrRake,
 }: InTransitTrainsPanelProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -155,14 +164,32 @@ export function InTransitTrainsPanel({
       }
     });
 
-    return byStatus.filter((t) => {
+    const byRake = byStatus.filter((t) => {
+      const owner = t.rakeOwner;
+      if (!filterIrRake && !filterUtclRake && !filterCcrRake) return false;
+      if (owner === "IR") return filterIrRake;
+      if (owner === "UTCL") return filterUtclRake;
+      if (owner === "CCR") return filterCcrRake;
+      return true;
+    });
+
+    return byRake.filter((t) => {
       if (!filterByEmpty && !filterByLoaded) return false;
       return (
         (filterByEmpty && t.leFlag === "E") ||
         (filterByLoaded && t.leFlag === "L")
       );
     });
-  }, [summaries, search, statusFilter, filterByEmpty, filterByLoaded]);
+  }, [
+    summaries,
+    search,
+    statusFilter,
+    filterByEmpty,
+    filterByLoaded,
+    filterIrRake,
+    filterUtclRake,
+    filterCcrRake,
+  ]);
 
   return (
     <div
